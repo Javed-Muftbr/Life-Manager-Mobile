@@ -780,7 +780,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<!-- ==== MOBILE BOTTOM NAV (paste just before </body>) ==== -->
+<!-- ==== MOBILE BOTTOM NAV (fixed) ==== -->
 <style>
   :root{ --safeB: env(safe-area-inset-bottom); --safeL: env(safe-area-inset-left); --safeR: env(safe-area-inset-right); }
   body{ padding-bottom: calc(78px + var(--safeB)); }
@@ -798,39 +798,41 @@ if ('serviceWorker' in navigator) {
   }
   .lm-bottom-nav .ico{ font-size:22px; line-height:22px; }
   .lm-bottom-nav button.active{ background:#f3f4f6; }
-  .lm-hide-top{ display:none !important; }
 </style>
 
 <script>
 (function(){
-  // Hide the old top-tiles block only (not full page)
-  function hideTopTiles(){
-    const blocks = Array.from(document.querySelectorAll('section,div,article,main'));
-    const target = blocks.find(el =>
-      /Daily Tasks/i.test(el.textContent||'') &&
-      /Namaz/i.test(el.textContent||'') &&
-      /Finance/i.test(el.textContent||'')
-    );
-    if(target){ target.classList.add('lm-hide-top'); }
+  // (A) Unhide all tab contents (so page visible ho)
+  document.querySelectorAll('.tab-content.hidden')
+    .forEach(el => el.classList.remove('hidden'));
+
+  // (B) Sirf upar wali tabs button bar ko hide karo
+  const btns = document.querySelectorAll('.tab-button');
+  if (btns.length) {
+    let bar = btns[0].parentElement;           // start from immediate container
+    // climb up jab tak aise container na mil jaye jismein 3+ tab-button hon
+    while (bar && bar.querySelectorAll('.tab-button').length < 3) {
+      bar = bar.parentElement;
+    }
+    if (bar) bar.style.display = 'none';
   }
 
-  // Find sections by headings
+  // (C) Scroll helpers
   function findSection(key){
     const map = {
-      daily:   [/Daily Tasks/i],
-      namaz:   [/Namaz/i,/Prayer/i],
-      finance: [/Finance Tracker/i,/Finance/i],
-      goals:   [/Weekly Goals/i,/Goals/i],
-      habits:  [/Habits/i],
-      plans:   [/Future Plans/i,/Plans/i],
+      daily:[/Daily Tasks/i],
+      namaz:[/Namaz/i,/Prayer/i],
+      finance:[/Finance Tracker/i,/Finance/i],
+      goals:[/Weekly Goals/i,/Goals/i],
+      habits:[/Habits/i],
+      plans:[/Future Plans/i,/Plans/i],
     };
     const pats = map[key]||[];
     const blocks = Array.from(document.querySelectorAll('section,div,article,main'));
-    for(const el of blocks){
-      const txt = (el.textContent||'');
-      if(pats.every(p=>p.test(txt))){
-        const h = el.querySelector('h1,h2,h3,h4')||el;
-        return h;
+    for (const el of blocks){
+      const txt = el.textContent || '';
+      if (pats.every(p=>p.test(txt))){
+        return el.querySelector('h1,h2,h3,h4') || el;
       }
     }
     const heads = Array.from(document.querySelectorAll('h1,h2,h3,h4'));
@@ -840,13 +842,13 @@ if ('serviceWorker' in navigator) {
   function go(key){
     const h = findSection(key);
     if(!h) return;
-    const offset = 72;
+    const offset = 72; // header height
     const y = h.getBoundingClientRect().top + window.scrollY - offset;
-    window.scrollTo({top:y, behavior:'smooth'});
+    window.scrollTo({ top:y, behavior:'smooth' });
     navBtns.forEach(b=>b.classList.toggle('active', b.dataset.to===key));
   }
 
-  // Build bottom nav
+  // (D) Bottom nav
   const nav = document.createElement('nav');
   nav.className = 'lm-bottom-nav';
   nav.innerHTML = `
@@ -861,8 +863,8 @@ if ('serviceWorker' in navigator) {
   const navBtns = Array.from(nav.querySelectorAll('button'));
   navBtns.forEach(btn => btn.addEventListener('click', () => go(btn.dataset.to)));
 
-  hideTopTiles();
-  setTimeout(()=>go('daily'), 400);
+  // Default focus
+  setTimeout(()=>go('daily'), 300);
 })();
 </script>
 <!-- ==== /MOBILE BOTTOM NAV ==== -->
