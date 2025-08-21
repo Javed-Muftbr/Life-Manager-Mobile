@@ -780,5 +780,93 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+  <!-- ==== MOBILE BOTTOM NAV + HIDE TOP TILES (paste just before </body>) ==== -->
+<style>
+  :root{ --safeB: env(safe-area-inset-bottom); --safeL: env(safe-area-inset-left); --safeR: env(safe-area-inset-right); }
+  body{ padding-bottom: calc(78px + var(--safeB)); }
+  .lm-bottom-nav{
+    position:fixed; left:0; right:0; bottom:0; z-index:9999;
+    background:#fff; border-top:1px solid rgba(0,0,0,.08);
+    padding:6px calc(8px + var(--safeR)) calc(8px + var(--safeB)) calc(8px + var(--safeL));
+    display:flex; justify-content:space-around; gap:2px;
+    -webkit-backdrop-filter:saturate(180%) blur(10px); backdrop-filter:saturate(180%) blur(10px);
+  }
+  .lm-bottom-nav button{
+    appearance:none; background:transparent; border:0; border-radius:12px;
+    padding:6px 8px; display:flex; flex-direction:column; align-items:center; gap:2px;
+    font-size:11px; line-height:1; color:#222;
+  }
+  .lm-bottom-nav .ico{ font-size:22px; line-height:22px; }
+  .lm-bottom-nav button.active{ background:#f3f4f6; }
+  .lm-hide-top{ display:none !important; }
+</style>
+
+<script>
+(function(){
+  // 1) Hide the old top tiles/links block if present
+  function hideTopTiles(){
+    const blocks = Array.from(document.querySelectorAll('section,div,article,main'));
+    const target = blocks.find(el => /Daily Tasks/i.test(el.textContent||'')
+                                   && /Namaz/i.test(el.textContent||'')
+                                   && /Finance/i.test(el.textContent||''));
+    if(target){ target.classList.add('lm-hide-top'); }
+  }
+
+  // 2) Find section by heading text (works with your existing headings)
+  function findSection(key){
+    const map = {
+      daily:   [/Daily Tasks/i],
+      namaz:   [/Namaz/i,/Prayer/i],
+      finance: [/Finance Tracker/i,/Finance/i],
+      goals:   [/Weekly Goals/i,/Goals/i],
+      habits:  [/Habits/i],
+      plans:   [/Future Plans/i,/Plans/i],
+    };
+    const pats = map[key]||[];
+    // try container blocks that include those headings
+    const blocks = Array.from(document.querySelectorAll('section,div,article,main'));
+    for(const el of blocks){
+      const txt = (el.textContent||'');
+      if(pats.every(p=>p.test(txt))){
+        const h = el.querySelector('h1,h2,h3,h4')||el;
+        return h;
+      }
+    }
+    // fallback: headings anywhere
+    const heads = Array.from(document.querySelectorAll('h1,h2,h3,h4'));
+    return heads.find(h => pats.some(p=>p.test(h.textContent||''))) || null;
+  }
+
+  // 3) Smooth scroll with header offset
+  function go(key){
+    const h = findSection(key);
+    if(!h) return;
+    const offset = 72; // top header height
+    const y = h.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({top:y, behavior:'smooth'});
+    navBtns.forEach(b=>b.classList.toggle('active', b.dataset.to===key));
+  }
+
+  // 4) Build bottom nav
+  const nav = document.createElement('nav');
+  nav.className = 'lm-bottom-nav';
+  nav.innerHTML = `
+    <button data-to="daily"><span class="ico">🏠</span><span>Daily</span></button>
+    <button data-to="namaz"><span class="ico">🕌</span><span>Namaz</span></button>
+    <button data-to="finance"><span class="ico">💸</span><span>Finance</span></button>
+    <button data-to="goals"><span class="ico">🎯</span><span>Goals</span></button>
+    <button data-to="habits"><span class="ico">📈</span><span>Habits</span></button>
+    <button data-to="plans"><span class="ico">📝</span><span>Plans</span></button>
+  `;
+  document.body.appendChild(nav);
+  const navBtns = Array.from(nav.querySelectorAll('button'));
+  navBtns.forEach(btn => btn.addEventListener('click', () => go(btn.dataset.to)));
+
+  hideTopTiles();
+  // default highlight
+  setTimeout(()=>go('daily'), 400);
+})();
+</script>
+<!-- ==== /MOBILE BOTTOM NAV ==== -->
 </body>
 </html>
