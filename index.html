@@ -780,38 +780,75 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<!-- ==== MOBILE BOTTOM NAV (SCROLL + TABS, NO HIDE) ==== -->
+<!-- ==== MOBILE BOTTOM NAV (paste just before </body>) ==== -->
 <style>
-  :root{
-    --safeB: env(safe-area-inset-bottom);
-    --safeL: env(safe-area-inset-left);
-    --safeR: env(safe-area-inset-right);
-  }
-  /* bottom nav ki jagah ke liye padding */
-  body{ padding-bottom: calc(90px + var(--safeB)); }
-
-  nav.lm-bottom{
+  :root{ --safeB: env(safe-area-inset-bottom); --safeL: env(safe-area-inset-left); --safeR: env(safe-area-inset-right); }
+  body{ padding-bottom: calc(78px + var(--safeB)); }
+  .lm-bottom-nav{
     position:fixed; left:0; right:0; bottom:0; z-index:9999;
     background:#fff; border-top:1px solid rgba(0,0,0,.08);
-    padding:8px calc(10px + var(--safeR)) calc(10px + var(--safeB)) calc(10px + var(--safeL));
-    display:flex; justify-content:space-around; gap:4px;
-    -webkit-backdrop-filter:saturate(180%) blur(10px);
-    backdrop-filter:saturate(180%) blur(10px);
+    padding:6px calc(8px + var(--safeR)) calc(8px + var(--safeB)) calc(8px + var(--safeL));
+    display:flex; justify-content:space-around; gap:2px;
+    -webkit-backdrop-filter:saturate(180%) blur(10px); backdrop-filter:saturate(180%) blur(10px);
   }
-  nav.lm-bottom button{
+  .lm-bottom-nav button{
     appearance:none; background:transparent; border:0; border-radius:12px;
-    padding:6px 10px; display:flex; flex-direction:column; align-items:center; gap:4px;
-    font-size:12px; line-height:1; color:#1f2937;
+    padding:6px 8px; display:flex; flex-direction:column; align-items:center; gap:2px;
+    font-size:11px; line-height:1; color:#222;
   }
-  nav.lm-bottom .ico{ font-size:22px; line-height:22px; }
-  nav.lm-bottom button.active{ background:#f3f4f6; }
+  .lm-bottom-nav .ico{ font-size:22px; line-height:22px; }
+  .lm-bottom-nav button.active{ background:#f3f4f6; }
+  .lm-hide-top{ display:none !important; }
 </style>
 
 <script>
-(function () {
-  // bottom nav create
+(function(){
+  // Hide the old top-tiles block only (not full page)
+  function hideTopTiles(){
+    const blocks = Array.from(document.querySelectorAll('section,div,article,main'));
+    const target = blocks.find(el =>
+      /Daily Tasks/i.test(el.textContent||'') &&
+      /Namaz/i.test(el.textContent||'') &&
+      /Finance/i.test(el.textContent||'')
+    );
+    if(target){ target.classList.add('lm-hide-top'); }
+  }
+
+  // Find sections by headings
+  function findSection(key){
+    const map = {
+      daily:   [/Daily Tasks/i],
+      namaz:   [/Namaz/i,/Prayer/i],
+      finance: [/Finance Tracker/i,/Finance/i],
+      goals:   [/Weekly Goals/i,/Goals/i],
+      habits:  [/Habits/i],
+      plans:   [/Future Plans/i,/Plans/i],
+    };
+    const pats = map[key]||[];
+    const blocks = Array.from(document.querySelectorAll('section,div,article,main'));
+    for(const el of blocks){
+      const txt = (el.textContent||'');
+      if(pats.every(p=>p.test(txt))){
+        const h = el.querySelector('h1,h2,h3,h4')||el;
+        return h;
+      }
+    }
+    const heads = Array.from(document.querySelectorAll('h1,h2,h3,h4'));
+    return heads.find(h => pats.some(p=>p.test(h.textContent||''))) || null;
+  }
+
+  function go(key){
+    const h = findSection(key);
+    if(!h) return;
+    const offset = 72;
+    const y = h.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({top:y, behavior:'smooth'});
+    navBtns.forEach(b=>b.classList.toggle('active', b.dataset.to===key));
+  }
+
+  // Build bottom nav
   const nav = document.createElement('nav');
-  nav.className = 'lm-bottom';
+  nav.className = 'lm-bottom-nav';
   nav.innerHTML = `
     <button data-to="daily"><span class="ico">🏠</span><span>Daily</span></button>
     <button data-to="namaz"><span class="ico">🕌</span><span>Namaz</span></button>
@@ -822,43 +859,10 @@ if ('serviceWorker' in navigator) {
   `;
   document.body.appendChild(nav);
   const navBtns = Array.from(nav.querySelectorAll('button'));
+  navBtns.forEach(btn => btn.addEventListener('click', () => go(btn.dataset.to)));
 
-  // bottom buttons -> top tabs mapping
-  const tabMap = {
-    daily: 'daily',
-    namaz: 'prayer',
-    finance: 'finance',
-    goals: 'goals',
-    habits: 'habits',
-    plans: 'future'
-  };
-
-  function go(key){
-    const tabId = tabMap[key];
-    // top tab dikhane ke liye usi ka button click karo (tumhari existing tab logic chalegi)
-    const tabBtn = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
-    if (tabBtn) tabBtn.click();
-
-    // ab us section par smooth scroll
-    const el = document.getElementById(tabId);
-    if (el){
-      const offset = 90; // header ke liye thoda gap
-      const y = el.getBoundingClientRect().top + window.scrollY - offset;
-      window.scrollTo({ top: y, behavior: 'smooth' });
-    }
-
-    // active state
-    navBtns.forEach(b => b.classList.toggle('active', b.dataset.to === key));
-  }
-
-  nav.addEventListener('click', (e)=>{
-    const btn = e.target.closest('button[data-to]');
-    if(!btn) return;
-    go(btn.dataset.to);
-  });
-
-  // default selection
-  go('daily');
+  hideTopTiles();
+  setTimeout(()=>go('daily'), 400);
 })();
 </script>
 <!-- ==== /MOBILE BOTTOM NAV ==== -->
